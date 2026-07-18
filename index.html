@@ -191,7 +191,9 @@
     gap: 6px; align-items: start;
     transition: background.18s ease, color.18s ease;
   }
- .profile-link:hover { background: var(--ink); color: var(--paper); }
+ .profile-link:hover,
+ .profile-link:focus-visible { background: var(--ink); color: var(--paper); }
+ .profile-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
  .profile-link .profile-title { font-family: var(--display); font-size: clamp(18px,1.7vw,24px); line-height: 1.02; min-width: 0; }
  .profile-link .profile-ref { font-size: 10px; text-transform: uppercase; color: currentColor; opacity:.68; white-space: normal; line-height: 1.2; align-self: end; }
   @media (max-width: 960px){
@@ -256,9 +258,10 @@
     border: 1px solid rgba(33,27,20,.52); color: var(--ink); text-decoration: none;
     background: rgba(255,255,255,.08);
   }
- .search-result:hover,.search-result.is-active {
+ .search-result:hover,.search-result:focus-visible,.search-result.is-active {
     background: var(--ink); color: var(--paper);
   }
+ .search-result:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
  .search-result-title {
     font-family: var(--display); font-size: clamp(20px,2vw,27px); line-height: 1;
   }
@@ -503,7 +506,10 @@
     padding: 10px 11px; background: rgba(255,255,255,.08);
     transition: background .18s ease, color .18s ease;
   }
- .related-link:hover { background: var(--ink); color: var(--paper); }
+ .related-link:hover,
+ .related-link:focus-visible { background: var(--ink); color: var(--paper); }
+ .related-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+ .entry h2:focus { outline: 2px solid var(--ink); outline-offset: 5px; }
  .related-title { font-family: var(--display); font-size: 21px; line-height: 1; }
  .related-tag {
     display: inline-flex; align-items: center; gap: 6px;
@@ -571,7 +577,7 @@
         <h2>Find a Parable</h2>
         <p>Search by title, Scripture reference, theme, audience, or words from the article.</p>
       </div>
-      <span id="selectedParableLabel">No parable selected</span>
+      <span id="selectedParableLabel" role="status" aria-live="polite" aria-atomic="true">No parable selected</span>
     </div>
     <label class="search-field" for="parableSearchInput">
       <span>Search</span>
@@ -1279,7 +1285,7 @@ const PARABLES = [
     lessons:["Our neighbour is everyone who needs our help.","Mercy ignores the boundaries of race, class, and creed.","Love is shown in action — “Go, and do likewise.”"],
     quote:"Our neighbor is every person who needs our help. Our neighbor is every soul who is wounded and bruised by the adversary. Our neighbor is every one who is the property of God.",
     source:"Ellen G. White, Christ's Object Lessons, p. 376" },
-  { id:"laborers-vineyard", art:"grapes", title:"The Labourers in the Vineyard", ref:"Matthew 20:1–16", gospel:"Matthew",
+  { id:"laborers-vineyard", art:"grapes", title:"The Laborers in the Vineyard", ref:"Matthew 20:1–16", gospel:"Matthew",
     scripture:"“So the last shall be first, and the first last: for many be called, but few chosen… Is thine eye evil, because I am good?”",
     context:"The rabbis taught that God's favour must be earned, and even the disciples were not free from this mercenary spirit. When a householder pays those hired at the eleventh hour the same as those who bore the day's burden, the grumbling of the first exposes the heart that serves for wages.",
     meaning:"The reward is not of works, lest any should boast, but is all of grace. Those who serve God from love rejoice that others share the same mercy; those who serve for reward begrudge the grace shown to the latecomer. God gives, not according to our deserving, but according to His goodness.",
@@ -1969,7 +1975,7 @@ function renderRelatedParables(p){
 let selectedParableId = "";
 function renderEntryArticleShell(p){
   return `
-  <article class="entry selected-entry" id="${p.id}">
+  <article class="entry selected-entry" id="${p.id}" aria-labelledby="${p.id}-title">
     <div class="entry-grid">
       <div class="plate">
         ${plate(artOf(p), p.ref, p.title)}
@@ -1979,7 +1985,7 @@ function renderEntryArticleShell(p){
         </div>
       </div>
       <div class="body">
-        <h2>${p.title}</h2>
+        <h2 id="${p.id}-title" tabindex="-1">${p.title}</h2>
         ${renderEntryArticle(p)}
       </div>
     </div>
@@ -2013,10 +2019,11 @@ function renderSelectedArticle(id, options = {}){
   setSelectedLabel(p);
   initScriptureDropdowns();
   updateSearchSelection();
-  if (options.scroll) {
+  if (options.scroll || options.focus) {
     requestAnimationFrame(() => {
       const target = document.getElementById(p.id) || entries;
-      target.scrollIntoView({ block:"start" });
+      if (options.scroll) target.scrollIntoView({ block:"start" });
+      if (options.focus) target.querySelector("h2")?.focus({ preventScroll:true });
     });
   }
 }
@@ -2108,7 +2115,7 @@ function renderSearchResults(query){
     return;
   }
   resultsEl.innerHTML = results.map(({ parable:p }) => `
-    <a class="search-result ${p.id === selectedParableId ? "is-active" : ""}" href="#${p.id}">
+    <a class="search-result ${p.id === selectedParableId ? "is-active" : ""}" href="#${p.id}" ${p.id === selectedParableId ? 'aria-current="true"' : ""}>
       <span class="search-result-title">${escapeHtml(p.title)}</span>
       <span class="search-result-meta">${escapeHtml(p.ref)}</span>
       <span class="search-result-excerpt">${escapeHtml(searchExcerptFor(p))}</span>
@@ -2116,7 +2123,10 @@ function renderSearchResults(query){
 }
 function updateSearchSelection(){
   document.querySelectorAll(".search-result").forEach(link => {
-    link.classList.toggle("is-active", link.getAttribute("href") === `#${selectedParableId}`);
+    const active = link.getAttribute("href") === `#${selectedParableId}`;
+    link.classList.toggle("is-active", active);
+    if (active) link.setAttribute("aria-current", "true");
+    else link.removeAttribute("aria-current");
   });
 }
 function initParableSearch(){
@@ -2353,7 +2363,7 @@ document.addEventListener("click", event => {
 });
 initParableSearch();
 renderExplorer();
-window.addEventListener("hashchange", () => syncPageToHash({ scroll:true }));
+window.addEventListener("hashchange", () => syncPageToHash({ scroll:true, focus:true }));
 syncPageToHash({ scroll:!!BYID[window.location.hash.slice(1)] });
 </script>
 </body>
