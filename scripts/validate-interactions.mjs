@@ -20,6 +20,7 @@ for (const [label, pattern] of [
   ["profile-link keyboard focus parity", /\.profile-link:hover,\s*\n\s*\.profile-link:focus-visible/u],
   ["search-result keyboard focus parity", /\.search-result:hover,\.search-result:focus-visible/u],
   ["related-link keyboard focus parity", /\.related-link:hover,\s*\n\s*\.related-link:focus-visible/u],
+  ["mobile brand target size", /\.nav-brand\s*\{[\s\S]*?display:\s*inline-flex;\s*min-height:\s*24px;/u],
 ]) {
   if (!pattern.test(html)) failures.push(`${label} is missing.`);
 }
